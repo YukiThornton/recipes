@@ -1,3 +1,7 @@
 *.log
 node_modules/
 .env
+db/data/*
+!db/data/.gitkeep
+db/logs/*
+!db/logs/.gitkeep

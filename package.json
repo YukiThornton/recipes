@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node-dev ./bin/www"
+    "start": "node-dev ./bin/www",
+    "db_start": "mongod --config db/mongodb.conf"
   },
   "dependencies": {
     "body-parser": "~1.18.2",
