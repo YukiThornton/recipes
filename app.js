@@ -1,3 +1,5 @@
+require('./db/mongo')
+
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -5,8 +7,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-var index = require('./routes/index');
-var users = require('./routes/users');
+var routes = require('./routes/index');
 
 var app = express();
 
@@ -22,8 +23,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', index);
-app.use('/users', users);
+app.get('/recipes', routes.listAllRecipes);
+app.delete('/recipes', routes.deleteAllRecipes);
+app.post('/recipe', routes.createRecipe);
+app.get('/recipe/:id', routes.getRecipe);
+app.put('/recipe/:id', routes.updateRecipe);
+app.delete('/recipe/:id', routes.deleteRecipe);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
