@@ -5,10 +5,10 @@ exports.listAllRecipes = function(req, res) {
   Recipe.find()
     .exec()
     .then(function(recipes){
-      res.send(recipes);
+      res.json({recipes: recipes});
     })
     .catch(function(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     });
 };
 
@@ -17,10 +17,10 @@ exports.deleteAllRecipes = function(req, res) {
     .remove()
     .exec()
     .then(function(result){
-      res.send(result);
+      res.json({result: result});
     })
     .catch(function(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     });
 };
 
@@ -30,9 +30,9 @@ exports.createRecipe = function(req, res) {
       content: req.body.content
   }).save(function (err, recipe){
     if(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     } else {
-      res.status(201).send(recipe);
+      res.status(201).json(recipe);
     }
   })
 };
@@ -43,10 +43,10 @@ exports.getRecipe = function(req, res) {
   })
     .exec()
     .then(function(recipe){
-      res.send(recipe);
+      res.json(recipe);
     })
     .catch(function(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     });
 };
 
@@ -57,9 +57,9 @@ exports.updateRecipe = function(req, res) {
     _id: req.params.id
   }, body, {new: true}, function(err, recipe) {
     if(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     } else {
-      res.send(recipe);
+      res.json(recipe);
     }
   });
 };
@@ -71,9 +71,9 @@ exports.deleteRecipe = function(req, res) {
     .remove()
     .exec()
     .then(function(result){
-      res.send(result);
+      res.json({result: result});
     })
     .catch(function(err) {
-      res.status(500).send(err);
+      res.status(500).json({err: err});
     });
 };
