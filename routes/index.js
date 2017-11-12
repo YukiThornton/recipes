@@ -1,5 +1,3 @@
-var express = require('express');
-var router = express.Router();
 var db = require('mongoose');
 var Recipe = db.model('Recipe');
 
@@ -8,12 +6,6 @@ exports.listAllRecipes = function(req, res) {
     .exec()
     .then(function(recipes){
       res.send(recipes);
-      /*
-      res.render( 'index', {
-          title : 'Recipes',
-          recipes : recipes
-      });
-      */
     })
     .catch(function(err) {
       res.status(500).send(err);
