@@ -1,7 +1,9 @@
-var db = require('mongoose');
-var Recipe = db.model('Recipe');
+let express = require('express');
+let router = express.Router();
+let db = require('mongoose');
+let Recipe = require('../models/recipe');
 
-exports.listAllRecipes = function(req, res) {
+router.get('/recipes', function(req, res) {
   Recipe.find()
     .exec()
     .then(function(recipes){
@@ -10,9 +12,9 @@ exports.listAllRecipes = function(req, res) {
     .catch(function(err) {
       res.status(500).json({err: err});
     });
-};
+});
 
-exports.deleteAllRecipes = function(req, res) {
+router.delete('/recipes', function(req, res) {
   Recipe.find()
     .remove()
     .exec()
@@ -22,9 +24,9 @@ exports.deleteAllRecipes = function(req, res) {
     .catch(function(err) {
       res.status(500).json({err: err});
     });
-};
+});
 
-exports.createRecipe = function(req, res) {
+router.post('/recipe', function(req, res) {
   new Recipe({
       title: req.body.title,
       content: req.body.content
@@ -35,9 +37,9 @@ exports.createRecipe = function(req, res) {
       res.status(201).json(recipe);
     }
   })
-};
+});
 
-exports.getRecipe = function(req, res) {
+router.get('/recipe/:id', function(req, res) {
   Recipe.findOne({
     _id: req.params.id
   })
@@ -48,10 +50,10 @@ exports.getRecipe = function(req, res) {
     .catch(function(err) {
       res.status(500).json({err: err});
     });
-};
+});
 
-exports.updateRecipe = function(req, res) {
-  var body = req.body;
+router.put('/recipe/:id', function(req, res) {
+  let body = req.body;
   body.last_modified_at = Date.now();
   Recipe.findOneAndUpdate({
     _id: req.params.id
@@ -62,9 +64,9 @@ exports.updateRecipe = function(req, res) {
       res.json(recipe);
     }
   });
-};
+});
 
-exports.deleteRecipe = function(req, res) {
+router.delete('/recipe/:id', function(req, res) {
   Recipe.findOne({
     _id: req.params.id
   })
@@ -76,4 +78,6 @@ exports.deleteRecipe = function(req, res) {
     .catch(function(err) {
       res.status(500).json({err: err});
     });
-};
+});
+
+module.exports = router;

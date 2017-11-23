@@ -1,7 +1,7 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+let mongoose = require('mongoose');
+let Schema = mongoose.Schema;
 
-var Recipe = new Schema({
+let Recipe = new Schema({
     title: String,
     content: String,
     created_at: {
@@ -14,5 +14,4 @@ var Recipe = new Schema({
     }
 });
 
-mongoose.model('Recipe', Recipe);
-mongoose.connect('mongodb://localhost:27017/recipes');
+module.exports = mongoose.model('Recipe', Recipe);
