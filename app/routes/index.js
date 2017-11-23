@@ -28,6 +28,9 @@ router.delete('/recipes', function(req, res) {
 });
 
 router.post('/recipe', function(req, res) {
+  if (!req.body.hasOwnProperty('title') || !req.body.hasOwnProperty('content')) {
+    res.status(400).json({err: 'Bad Request'});
+  }
   new Recipe({
       title: req.body.title,
       content: req.body.content
@@ -46,7 +49,11 @@ router.get('/recipe/:id', function(req, res) {
   })
     .exec()
     .then(function(recipe){
-      res.json(recipe);
+      if (recipe == null) {
+        res.status(404).json({err: 'Not Found'});
+      } else {
+        res.json(recipe);
+      }
     })
     .catch(function(err) {
       res.status(500).json({err: err});
