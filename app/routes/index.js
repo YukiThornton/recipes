@@ -1,8 +1,8 @@
-let express = require('express');
-let router = express.Router();
-let db = require('mongoose');
+const express = require('express');
+const router = express.Router();
+const db = require('mongoose');
 db.Promise = global.Promise;
-let Recipe = require('../models/recipe');
+const Recipe = require('../models/recipe');
 
 router.get('/recipes', function(req, res) {
   Recipe.find()

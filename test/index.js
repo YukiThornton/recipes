@@ -1,9 +1,46 @@
-let expect = require('chai').expect;
-let mongoose = require('mongoose');
-let Recipe = require('../app/models/recipe');
-let server = require('../server');
-let request = require('supertest');
-let config = require('config');
+const expect = require('chai').expect;
+const mongoose = require('mongoose');
+const Recipe = require('../app/models/recipe');
+const server = require('../server');
+const request = require('supertest');
+const config = require('config');
+
+const RECIPE_RES_PROPERTIES = ['title', 'content', '_id', 'created_at', 'last_modified_at', '__v'];
+
+const data = [
+  {
+    title: 'test recipe title 1',
+    content: 'test recipe content 1'
+  },
+  {
+    title: 'test recipe title 2',
+    content: 'test recipe content 2'
+  },
+  {
+    title: 'test recipe title 3',
+    content: 'test recipe content 3'
+  }
+];
+
+function containsRecipeProperties(obj) {
+  expect(obj).to.include.keys(RECIPE_RES_PROPERTIES);
+}
+
+function isSameRecipe(actual, expected) {
+  containsRecipeProperties(actual);
+  expect(actual.title).to.equal(expected.title);
+  expect(actual.content).to.equal(expected.content);
+  expect(actual._id).to.equal('' + expected._id);
+  expect(actual.created_at).to.equal(expected.created_at.toISOString());
+  expect(actual.last_modified_at).to.equal(expected.last_modified_at.toISOString());
+}
+
+function areSameRecipes(actual, expected) {
+  expect(actual).to.have.lengthOf(expected.length);
+  for (var i = 0; i < actual.length; i++) {
+    isSameRecipe(actual[i], expected[i]);
+  }
+}
 
 describe('Recipe Route', function() {
   beforeEach((done) => {
@@ -15,37 +52,6 @@ describe('Recipe Route', function() {
   after(() => {
     mongoose.connection.close();
   });
-
-  let data = [
-    {
-      title: 'test recipe title 1',
-      content: 'test recipe content 1'
-    },
-    {
-      title: 'test recipe title 2',
-      content: 'test recipe content 2'
-    },
-    {
-      title: 'test recipe title 3',
-      content: 'test recipe content 3'
-    }
-  ];
-  const RECIPE_RES_PROPERTIES = ['title', 'content', '_id', 'created_at', 'last_modified_at'];
-
-  function isSameRecipe(actual, expected) {
-    expect(actual).to.have.property('title', expected.title);
-    expect(actual).to.have.property('content', expected.content);
-    expect(actual).to.have.property('_id', '' + expected._id);
-    expect(actual).to.have.property('created_at', expected.created_at.toISOString());
-    expect(actual).to.have.property('last_modified_at', '' + expected.last_modified_at.toISOString());
-  }
-
-  function areSameRecipes(actual, expected) {
-    expect(actual).to.have.lengthOf(expected.length);
-    for (var i = 0; i < actual.length; i++) {
-      isSameRecipe(actual[i], expected[i]);
-    }
-  }
 
   describe('GET /recipes', function() {
     it ('should get all recipes (size > 0)', function(done) {
@@ -117,7 +123,7 @@ describe('Recipe Route', function() {
         .expect('Content-Type', /json/)
         .expect(201)
         .expect((res) => {
-          expect(res.body).to.include.keys(RECIPE_RES_PROPERTIES);
+          containsRecipeProperties(res.body);
           expect(res.body.title).to.equal(data[0].title);
           expect(res.body.content).to.equal(data[0].content);
           Recipe.find({_id: res.body._id})
