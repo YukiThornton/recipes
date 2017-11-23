@@ -4,11 +4,10 @@ let logger = require('morgan');
 let cookieParser = require('cookie-parser');
 let bodyParser = require('body-parser');
 
-process.env.NODE_ENV = "develop";
 let config = require('config');
 let router = require('./app/routes/index');
 
-mongoose.connect(config.DB_HOST);
+mongoose.connect(config.DB_HOST, {useMongoClient: true});
 
 let app = express();
 
