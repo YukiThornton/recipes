@@ -154,4 +154,156 @@ describe('Recipe Route', function() {
     });
   });
 
+  describe('GET /recipe/:id', function() {
+    it ('should get specified recipe', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .get(`/recipe/${createdRecipe._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .expect((res) => {
+            isSameRecipe(res.body, createdRecipe);
+          })
+          .end(done);
+      });
+    });
+
+    it ('should return 404 when specified recipe id is invalid', function(done) {
+      request(server)
+        .get('/recipe/wrongid')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+
+    it ('should return 404 when specified recipe does not exist', function(done) {
+      request(server)
+        .get('/recipe/53cb6b9b4f4ddef1ad47f943')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+  });
+
+  describe('PUT /recipe/:id', function() {
+    it ('should update specified recipe when request body has title and content', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .put(`/recipe/${createdRecipe._id}`)
+          .send(data[1])
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .expect((res) => {
+            containsRecipeProperties(res.body);
+            expect(res.body.title).to.equal(data[1].title);
+            expect(res.body.content).to.equal(data[1].content);
+            expect(res.body.created_at).to.equal(createdRecipe.created_at.toISOString());
+            expect(res.body.last_modified_at).does.not.equal(createdRecipe.last_modified_at.toISOString());
+          })
+          .end(done);
+      });
+    });
+
+    it ('should update specified recipe when request body has title', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .put(`/recipe/${createdRecipe._id}`)
+          .send({title: data[1].title})
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .expect((res) => {
+            containsRecipeProperties(res.body);
+            expect(res.body.title).to.equal(data[1].title);
+            expect(res.body.content).to.equal(createdRecipe.content);
+            expect(res.body.created_at).to.equal(createdRecipe.created_at.toISOString());
+            expect(res.body.last_modified_at).does.not.equal(createdRecipe.last_modified_at.toISOString());
+          })
+          .end(done);
+      });
+    });
+
+    it ('should update specified recipe when request body has content', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .put(`/recipe/${createdRecipe._id}`)
+          .send({content: data[1].content})
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .expect((res) => {
+            containsRecipeProperties(res.body);
+            expect(res.body.title).to.equal(createdRecipe.title);
+            expect(res.body.content).to.equal(data[1].content);
+            expect(res.body.created_at).to.equal(createdRecipe.created_at.toISOString());
+            expect(res.body.last_modified_at).does.not.equal(createdRecipe.last_modified_at.toISOString());
+          })
+          .end(done);
+      });
+    });
+
+    it ('should return 404 when specified recipe id is invalid', function(done) {
+      request(server)
+        .put('/recipe/wrongid')
+        .send(data[0])
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+
+    it ('should return 404 when specified recipe does not exist', function(done) {
+      request(server)
+        .put('/recipe/53cb6b9b4f4ddef1ad47f943')
+        .send(data[0])
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+
+    it ('should return 400 when request body has neither title nor content', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .put(`/recipe/${createdRecipe._id}`)
+          .send({})
+          .expect('Content-Type', /json/)
+          .expect(400)
+          .end(done);
+      });
+    });
+  });
+
+  describe('DELETE /recipe/:id', function() {
+    it ('should delete specified recipe', function(done) {
+      Recipe.create(data[0], (err, createdRecipe) => {
+        request(server)
+          .delete(`/recipe/${createdRecipe._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .expect(() => {
+            Recipe.findOne({
+              _id: createdRecipe._id
+            })
+              .exec()
+              .then(function(recipe){
+                expect(recipe).to.be.null;
+              });
+          })
+          .end(done);
+      });
+    });
+
+    it ('should return 404 when specified recipe id is invalid', function(done) {
+      request(server)
+        .delete('/recipe/wrongid')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+
+    it ('should return 404 when specified recipe does not exist', function(done) {
+      request(server)
+        .delete('/recipe/53cb6b9b4f4ddef1ad47f943')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(done);
+    });
+  });
 });
