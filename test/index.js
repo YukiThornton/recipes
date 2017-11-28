@@ -5,7 +5,7 @@ const server = require('../server');
 const request = require('supertest');
 const config = require('config');
 
-const RECIPE_RES_PROPERTIES = ['title', 'content', '_id', 'created_at', 'last_modified_at', '__v'];
+const RECIPE_RES_PROPERTIES = ['title', 'content', 'id', 'created_at', 'last_modified_at'];
 
 const data = [
   {
@@ -30,7 +30,7 @@ function isSameRecipe(actual, expected) {
   containsRecipeProperties(actual);
   expect(actual.title).to.equal(expected.title);
   expect(actual.content).to.equal(expected.content);
-  expect(actual._id).to.equal('' + expected._id);
+  expect(actual.id).to.equal('' + expected._id);
   expect(actual.created_at).to.equal(expected.created_at.toISOString());
   expect(actual.last_modified_at).to.equal(expected.last_modified_at.toISOString());
 }
@@ -126,7 +126,7 @@ describe('Recipe Route', function() {
           containsRecipeProperties(res.body);
           expect(res.body.title).to.equal(data[0].title);
           expect(res.body.content).to.equal(data[0].content);
-          Recipe.find({_id: res.body._id})
+          Recipe.find({_id: res.body.id})
             .exec()
             .then(function(recipes){
               expect(recipes).to.have.lengthOf(1);
@@ -277,7 +277,9 @@ describe('Recipe Route', function() {
           .delete(`/recipe/${createdRecipe._id}`)
           .expect('Content-Type', /json/)
           .expect(200)
-          .expect(() => {
+          .expect((res) => {
+            expect(res.body.deleted).to.be.true;
+            expect(res.body.deletedRecipe.id).to.equal('' + createdRecipe._id);
             Recipe.findOne({
               _id: createdRecipe._id
             })

@@ -6,21 +6,33 @@ const Recipe = require('../models/recipe');
 
 const returnBadRequest = (res) => {
   res.status(400).json({err: 'Bad Request'});
-}
+};
 
 const returnNotFound = (res) => {
   res.status(404).json({message: 'Not Found'});
-}
+};
 
 const returnInternalServerError = (res) => {
   res.status(500).json({message: 'Internal Server Error'});
-}
+};
+
+const createResponseRecipe = (dbRecipe) => {
+  return {
+    id: dbRecipe._id,
+    title: dbRecipe.title,
+    content: dbRecipe.content,
+    created_at: dbRecipe.created_at,
+    last_modified_at: dbRecipe.last_modified_at,
+  };
+};
 
 router.get('/recipes', function(req, res) {
   Recipe.find()
     .exec()
     .then(function(recipes){
-      res.json({recipes: recipes});
+      const recipeArray = [];
+      recipes.map((recipe => recipeArray.push(createResponseRecipe(recipe))));
+      res.json({recipes: recipeArray});
     })
     .catch(function(err) {
       console.log(err);
@@ -51,7 +63,7 @@ router.post('/recipe', function(req, res) {
       content: req.body.content
   }).save(function (err, recipe){
     if(!err) {
-      res.status(201).json(recipe);
+      res.status(201).json(createResponseRecipe(recipe));
     } else {
       console.log(err);
       returnInternalServerError(res);
@@ -70,7 +82,7 @@ router.get('/recipe/:id', function(req, res) {
     .exec()
     .then(function(recipe){
       if (recipe != null) {
-        res.json(recipe);
+        res.json(createResponseRecipe(recipe));
       } else {
         returnNotFound(res);
       }
@@ -96,7 +108,7 @@ router.put('/recipe/:id', function(req, res) {
   }, req.body, {new: true}, function(err, recipe) {
     if(!err) {
       if (recipe != null) {
-        res.json(recipe);
+        res.json(createResponseRecipe(recipe));
       } else {
         returnNotFound(res);
       }
@@ -112,18 +124,19 @@ router.delete('/recipe/:id', function(req, res) {
     returnNotFound(res);
     return;
   }
-  Recipe.remove({
+  Recipe.findOneAndRemove({
     _id: req.params.id
-  }, function(err, removeResult){
-    if (removeResult.result.n > 0) {
-      res.json({
-        count: removeResult.result.n,
-        ok: removeResult.result.ok,
-      });
-    } else {
-      returnNotFound(res);
-    }
   })
+    .exec(function(err, removedRecipe){
+      if (removedRecipe != null) {
+        res.json({
+          deleted: true,
+          deletedRecipe: createResponseRecipe(removedRecipe),
+        });
+      } else {
+        returnNotFound(res);
+      }
+    })
     .catch(function(err) {
       console.log(err);
       returnInternalServerError(res);
