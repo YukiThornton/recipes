@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const Recipe = require('../models/recipe');
+const recipeTypes = require('../constants/recipe-types');
 
 const returnBadRequest = (res) => {
   res.status(400).json({err: 'Bad Request'});
@@ -19,8 +20,9 @@ const returnInternalServerError = (res) => {
 const createResponseRecipe = (dbRecipe) => {
   return {
     id: dbRecipe._id,
+    recipe_type: dbRecipe.recipe_type,
     title: dbRecipe.title,
-    content: dbRecipe.content,
+    body: dbRecipe.body,
     created_at: dbRecipe.created_at,
     last_modified_at: dbRecipe.last_modified_at,
   };
@@ -54,13 +56,15 @@ router.delete('/recipes', function(req, res) {
 });
 
 router.post('/recipe', function(req, res) {
-  if (!req.body.hasOwnProperty('title') || !req.body.hasOwnProperty('content')) {
+  if (!req.body.hasOwnProperty('title') || !req.body.hasOwnProperty('recipe_type') || !req.body.hasOwnProperty('body')) {
     returnBadRequest(res);
     return;
   }
+  // TODO: check recipe_type string
   new Recipe({
-      title: req.body.title,
-      content: req.body.content
+    recipe_type: req.body.recipe_type,
+    title: req.body.title,
+    body: req.body.body,
   }).save(function (err, recipe){
     if(!err) {
       res.status(201).json(createResponseRecipe(recipe));
@@ -98,25 +102,64 @@ router.put('/recipe/:id', function(req, res) {
     returnNotFound(res);
     return;
   }
-  if (!req.body.hasOwnProperty('title') && !req.body.hasOwnProperty('content')) {
+  if (req.body.hasOwnProperty('recipe_type')) {
     returnBadRequest(res);
     return;
   }
-  req.body.last_modified_at = Date.now();
-  Recipe.findOneAndUpdate({
+  if (!req.body.hasOwnProperty('title') && !req.body.hasOwnProperty('body')) {
+    returnBadRequest(res);
+    return;
+  }
+  var shouldUpdateBody = req.body.hasOwnProperty('body');
+  Recipe.findOne({
     _id: req.params.id
-  }, req.body, {new: true}, function(err, recipe) {
-    if(!err) {
-      if (recipe != null) {
-        res.json(createResponseRecipe(recipe));
+  })
+    .exec()
+    .then(function(foundRecipe){
+      if (foundRecipe != null) {
+        var updateContent = {
+          last_modified_at:  Date.now()
+        };
+        if (req.body.hasOwnProperty('title')) {
+          updateContent.title = req.body.title;
+        }
+        if (shouldUpdateBody) {
+          switch (foundRecipe.recipe_type) {
+            case recipeTypes.RECIPE_TYPE_MEMO:
+              if (!req.body.body.hasOwnProperty('memo')) {
+                returnBadRequest(res);
+              }
+              updateContent.body = {
+                memo: req.body.body.memo
+              };
+              break;
+            default:
+              returnInternalServerError(res);
+              return;
+          }
+        }
+        Recipe.findOneAndUpdate({
+          _id: req.params.id
+        }, updateContent, {new: true}, function(err, recipe) {
+          if(!err) {
+            if (recipe != null) {
+              res.json(createResponseRecipe(recipe));
+            } else {
+              returnNotFound(res);
+            }
+          } else {
+            console.log(err);
+            returnInternalServerError(res);
+          }
+        });
       } else {
         returnNotFound(res);
       }
-    } else {
+    })
+    .catch(function(err) {
       console.log(err);
       returnInternalServerError(res);
-    }
-  });
+    });
 });
 
 router.delete('/recipe/:id', function(req, res) {

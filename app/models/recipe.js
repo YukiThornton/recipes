@@ -2,8 +2,11 @@ let mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 
 let Recipe = new Schema({
+    recipe_type: String,
     title: String,
-    content: String,
+    body: {
+      memo: String
+    },
     created_at: {
       type: Date,
       default: Date.now
