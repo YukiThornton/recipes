@@ -4,7 +4,7 @@ let Schema = mongoose.Schema;
 let Recipe = new Schema({
     recipe_type: String,
     title: String,
-    body: {
+    content: {
       memo: String
     },
     created_at: {

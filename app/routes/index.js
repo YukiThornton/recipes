@@ -22,11 +22,41 @@ const createResponseRecipe = (dbRecipe) => {
     id: dbRecipe._id,
     recipe_type: dbRecipe.recipe_type,
     title: dbRecipe.title,
-    body: dbRecipe.body,
+    content: dbRecipe.content,
     created_at: dbRecipe.created_at,
     last_modified_at: dbRecipe.last_modified_at,
   };
 };
+
+const hasValidRecipeType = (requestBody) => {
+  if (requestBody.hasOwnProperty('recipe_type')) {
+    var types = Object.keys(recipeTypes);
+    for (var i = 0; i < types.length; i++) {
+      if (recipeTypes[types[i]] === requestBody.recipe_type) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const isValidRecipeContent = (content, recipe_type) => {
+  switch (recipe_type) {
+    case recipeTypes.RECIPE_TYPE_MEMO:
+      return (Object.keys(content).length === 1) && (typeof content.memo === 'string');
+
+    default:
+      return false;
+  }
+}
+
+const hasValidRecipeContent = (requestBody) => {
+  if (requestBody.hasOwnProperty('content')) {
+    return isValidRecipeContent(requestBody.content, requestBody.recipe_type);
+  } else {
+    return false;
+  }
+}
 
 router.get('/recipes', function(req, res) {
   Recipe.find()
@@ -56,15 +86,14 @@ router.delete('/recipes', function(req, res) {
 });
 
 router.post('/recipe', function(req, res) {
-  if (!req.body.hasOwnProperty('title') || !req.body.hasOwnProperty('recipe_type') || !req.body.hasOwnProperty('body')) {
+  if (!req.body.hasOwnProperty('title') || !hasValidRecipeType(req.body) || !hasValidRecipeContent(req.body)) {
     returnBadRequest(res);
     return;
   }
-  // TODO: check recipe_type string
   new Recipe({
     recipe_type: req.body.recipe_type,
     title: req.body.title,
-    body: req.body.body,
+    content: req.body.content,
   }).save(function (err, recipe){
     if(!err) {
       res.status(201).json(createResponseRecipe(recipe));
@@ -106,55 +135,57 @@ router.put('/recipe/:id', function(req, res) {
     returnBadRequest(res);
     return;
   }
-  if (!req.body.hasOwnProperty('title') && !req.body.hasOwnProperty('body')) {
+  var shouldUpdateTitle = req.body.hasOwnProperty('title');
+  var shouldUpdateContent = req.body.hasOwnProperty('content');
+  if (!shouldUpdateTitle && !shouldUpdateContent) {
     returnBadRequest(res);
     return;
   }
-  var shouldUpdateBody = req.body.hasOwnProperty('body');
   Recipe.findOne({
     _id: req.params.id
   })
     .exec()
     .then(function(foundRecipe){
-      if (foundRecipe != null) {
-        var updateContent = {
-          last_modified_at:  Date.now()
-        };
-        if (req.body.hasOwnProperty('title')) {
-          updateContent.title = req.body.title;
-        }
-        if (shouldUpdateBody) {
-          switch (foundRecipe.recipe_type) {
-            case recipeTypes.RECIPE_TYPE_MEMO:
-              if (!req.body.body.hasOwnProperty('memo')) {
-                returnBadRequest(res);
-              }
-              updateContent.body = {
-                memo: req.body.body.memo
-              };
-              break;
-            default:
-              returnInternalServerError(res);
-              return;
-          }
-        }
-        Recipe.findOneAndUpdate({
-          _id: req.params.id
-        }, updateContent, {new: true}, function(err, recipe) {
-          if(!err) {
-            if (recipe != null) {
-              res.json(createResponseRecipe(recipe));
-            } else {
-              returnNotFound(res);
-            }
-          } else {
-            console.log(err);
-            returnInternalServerError(res);
-          }
-        });
-      } else {
+      if (foundRecipe === null) {
         returnNotFound(res);
+        return;
       }
+      if (shouldUpdateContent && !isValidRecipeContent(req.body.content, foundRecipe.recipe_type)) {
+        returnBadRequest(res);
+        return;
+      }
+      var updateContent = {
+        last_modified_at:  Date.now()
+      };
+      if (shouldUpdateTitle) {
+        updateContent.title = req.body.title;
+      }
+      if (shouldUpdateContent) {
+        switch (foundRecipe.recipe_type) {
+          case recipeTypes.RECIPE_TYPE_MEMO:
+            updateContent.content = {
+              memo: req.body.content.memo
+            };
+            break;
+          default:
+            returnInternalServerError(res);
+            return;
+        }
+      }
+      Recipe.findOneAndUpdate({
+        _id: req.params.id
+      }, updateContent, {new: true}, function(err, recipe) {
+        if(!err) {
+          if (recipe != null) {
+            res.json(createResponseRecipe(recipe));
+          } else {
+            returnNotFound(res);
+          }
+        } else {
+          console.log(err);
+          returnInternalServerError(res);
+        }
+      });
     })
     .catch(function(err) {
       console.log(err);

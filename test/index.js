@@ -6,28 +6,28 @@ const request = require('supertest');
 const config = require('config');
 const recipeTypes = require('../app/constants/recipe-types');
 
-const RECIPE_RES_PROPERTIES = ['recipe_type', 'title', 'body', 'id', 'created_at', 'last_modified_at'];
-const MEMO_BODY_PROPERTIES = ['memo'];
+const RECIPE_RES_PROPERTIES = ['recipe_type', 'title', 'content', 'id', 'created_at', 'last_modified_at'];
+const MEMO_CONTENT_PROPERTIES = ['memo'];
 
 const data = [
   {
     recipe_type: recipeTypes.RECIPE_TYPE_MEMO,
     title: 'test recipe title 1',
-    body: {
+    content: {
       memo: 'test recipe content 1',
     },
   },
   {
     recipe_type: recipeTypes.RECIPE_TYPE_MEMO,
     title: 'test recipe title 2',
-    body: {
+    content: {
       memo: 'test recipe content 2',
     },
   },
   {
     recipe_type: recipeTypes.RECIPE_TYPE_MEMO,
     title: 'test recipe title 3',
-    body: {
+    content: {
       memo: 'test recipe content 3',
     },
   }
@@ -37,12 +37,12 @@ function containsRecipeProperties(obj) {
   expect(obj).to.include.keys(RECIPE_RES_PROPERTIES);
 }
 
-function containsMemoBodyProperties(obj) {
-  expect(obj).to.include.keys(MEMO_BODY_PROPERTIES);
+function containsMemoContentProperties(obj) {
+  expect(obj).to.include.keys(MEMO_CONTENT_PROPERTIES);
 }
 
-function isSameMemoBody(actual, expected) {
-  containsMemoBodyProperties(actual);
+function isSameMemoContent(actual, expected) {
+  containsMemoContentProperties(actual);
   expect(actual.memo).to.equal(expected.memo);
 }
 
@@ -52,7 +52,7 @@ function isSameRecipe(actual, expected) {
   expect(actual.title).to.equal(expected.title);
   switch (actual.recipe_type) {
     case recipeTypes.RECIPE_TYPE_MEMO:
-      isSameMemoBody(actual.body, expected.body);
+      isSameMemoContent(actual.content, expected.content);
       break;
     default:
       break;
@@ -155,7 +155,7 @@ describe('Recipe Route', function() {
           expect(res.body.title).to.equal(data[0].title);
           switch (res.body.recipe_type) {
             case recipeTypes.RECIPE_TYPE_MEMO:
-              isSameMemoBody(res.body.body, data[0].body);
+              isSameMemoContent(res.body.content, data[0].content);
               break;
             default:
               break;
@@ -169,12 +169,27 @@ describe('Recipe Route', function() {
         .end(done);
     });
 
-    it ('should fail without a recipe_type in request', function(done) {
+    it ('should fail without any recipe_type in request', function(done) {
       request(server)
         .post('/recipe')
         .send({
           title: 'test recipe title',
-          body: {
+          content: {
+            memo: 'test recipe content',
+          },
+        })
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .end(done);
+    });
+
+    it ('should fail without a valid recipe_type in request', function(done) {
+      request(server)
+        .post('/recipe')
+        .send({
+          recipe_type: 'invalid recipe type',
+          title: 'test recipe title',
+          content: {
             memo: 'test recipe content',
           },
         })
@@ -188,7 +203,7 @@ describe('Recipe Route', function() {
         .post('/recipe')
         .send({
           recipe_type: recipeTypes.RECIPE_TYPE_MEMO,
-          body: {
+          content: {
             memo: 'test recipe content',
           },
         })
@@ -197,7 +212,7 @@ describe('Recipe Route', function() {
         .end(done);
     });
 
-    it ('should fail without body in request', function(done) {
+    it ('should fail without content in request', function(done) {
       request(server)
         .post('/recipe')
         .send({
@@ -242,13 +257,13 @@ describe('Recipe Route', function() {
   });
 
   describe('PUT /recipe/:id', function() {
-    it ('should update specified recipe when request body has title and body', function(done) {
+    it ('should update specified recipe when request body has title and content', function(done) {
       Recipe.create(data[0], (err, createdRecipe) => {
         request(server)
           .put(`/recipe/${createdRecipe._id}`)
           .send({
             title: data[1].title,
-            body: data[1].body,
+            content: data[1].content,
           })
           .expect('Content-Type', /json/)
           .expect(200)
@@ -259,7 +274,7 @@ describe('Recipe Route', function() {
             expect(res.body.title).to.equal(data[1].title);
             switch (res.body.recipe_type) {
               case recipeTypes.RECIPE_TYPE_MEMO:
-                isSameMemoBody(res.body.body, data[1].body);
+                isSameMemoContent(res.body.content, data[1].content);
                 break;
               default:
                 break;
@@ -286,7 +301,7 @@ describe('Recipe Route', function() {
             expect(res.body.title).to.equal(data[1].title);
             switch (res.body.recipe_type) {
               case recipeTypes.RECIPE_TYPE_MEMO:
-                isSameMemoBody(res.body.body, createdRecipe.body);
+                isSameMemoContent(res.body.content, createdRecipe.content);
                 break;
               default:
                 break;
@@ -298,12 +313,12 @@ describe('Recipe Route', function() {
       });
     });
 
-    it ('should update specified recipe when request body has body', function(done) {
+    it ('should update specified recipe when request body has content', function(done) {
       Recipe.create(data[0], (err, createdRecipe) => {
         request(server)
           .put(`/recipe/${createdRecipe._id}`)
           .send({
-            body: data[1].body
+            content: data[1].content
           })
           .expect('Content-Type', /json/)
           .expect(200)
@@ -313,7 +328,7 @@ describe('Recipe Route', function() {
             expect(res.body.title).to.equal(createdRecipe.title);
             switch (res.body.recipe_type) {
               case recipeTypes.RECIPE_TYPE_MEMO:
-                isSameMemoBody(res.body.body, data[1].body);
+                isSameMemoContent(res.body.content, data[1].content);
                 break;
               default:
                 break;
@@ -330,7 +345,7 @@ describe('Recipe Route', function() {
         .put('/recipe/wrongid')
         .send({
           title: data[0].title,
-          body: data[0].body,
+          content: data[0].content,
         })
         .expect('Content-Type', /json/)
         .expect(404)
@@ -342,7 +357,7 @@ describe('Recipe Route', function() {
         .put('/recipe/53cb6b9b4f4ddef1ad47f943')
         .send({
           title: data[0].title,
-          body: data[0].body,
+          content: data[0].content,
         })
         .expect('Content-Type', /json/)
         .expect(404)
@@ -363,7 +378,7 @@ describe('Recipe Route', function() {
       });
     });
 
-    it ('should return 400 when request body has neither title nor body', function(done) {
+    it ('should return 400 when request body has neither title nor content', function(done) {
       Recipe.create(data[0], (err, createdRecipe) => {
         request(server)
           .put(`/recipe/${createdRecipe._id}`)
