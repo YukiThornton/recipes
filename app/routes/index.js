@@ -3,7 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const Recipe = require('../models/recipe');
-const recipeTypes = require('../constants/recipe-types');
+const Memo = require('../models/recipe');
+const recipeKinds = require('../constants/recipe-kinds');
 
 const returnBadRequest = (res) => {
   res.status(400).json({err: 'Bad Request'});
@@ -18,45 +19,36 @@ const returnInternalServerError = (res) => {
 };
 
 const createResponseRecipe = (dbRecipe) => {
-  return {
+  const recipe = {
     id: dbRecipe._id,
-    recipe_type: dbRecipe.recipe_type,
+    kind: dbRecipe.kind,
     title: dbRecipe.title,
-    content: dbRecipe.content,
     created_at: dbRecipe.created_at,
     last_modified_at: dbRecipe.last_modified_at,
   };
+  switch(recipe.kind) {
+    case recipeKinds.MEMO:
+      recipe.content = {
+        memo: dbRecipe.content.memo
+      };
+      break;
+    default:
+      break;
+  }
+  return recipe;
 };
 
-const hasValidRecipeType = (requestBody) => {
-  if (requestBody.hasOwnProperty('recipe_type')) {
-    var types = Object.keys(recipeTypes);
-    for (var i = 0; i < types.length; i++) {
-      if (recipeTypes[types[i]] === requestBody.recipe_type) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
+const isValidMemoContent = (content) => {
+  return (Object.keys(content).length === 1) && (typeof content.memo === 'string');
+};
 
-const isValidRecipeContent = (content, recipe_type) => {
-  switch (recipe_type) {
-    case recipeTypes.RECIPE_TYPE_MEMO:
-      return (Object.keys(content).length === 1) && (typeof content.memo === 'string');
-
-    default:
-      return false;
-  }
-}
-
-const hasValidRecipeContent = (requestBody) => {
+const hasValidMemoContent = (requestBody) => {
   if (requestBody.hasOwnProperty('content')) {
-    return isValidRecipeContent(requestBody.content, requestBody.recipe_type);
+    return isValidMemoContent(requestBody.content);
   } else {
     return false;
   }
-}
+};
 
 router.get('/recipes', function(req, res) {
   Recipe.find()
@@ -85,18 +77,19 @@ router.delete('/recipes', function(req, res) {
     });
 });
 
-router.post('/recipe', function(req, res) {
-  if (!req.body.hasOwnProperty('title') || !hasValidRecipeType(req.body) || !hasValidRecipeContent(req.body)) {
+router.post('/memo', function(req, res) {
+  if (!req.body.hasOwnProperty('title') || !hasValidMemoContent(req.body)) {
     returnBadRequest(res);
     return;
   }
-  new Recipe({
-    recipe_type: req.body.recipe_type,
+  new Memo({
     title: req.body.title,
-    content: req.body.content,
-  }).save(function (err, recipe){
+    content: {
+      memo: req.body.content.memo
+    },
+  }).save(function (err, memo){
     if(!err) {
-      res.status(201).json(createResponseRecipe(recipe));
+      res.status(201).json(createResponseRecipe(memo));
     } else {
       console.log(err);
       returnInternalServerError(res);
@@ -126,18 +119,14 @@ router.get('/recipe/:id', function(req, res) {
     });
 });
 
-router.put('/recipe/:id', function(req, res) {
+router.put('/memo/:id', function(req, res) {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     returnNotFound(res);
     return;
   }
-  if (req.body.hasOwnProperty('recipe_type')) {
-    returnBadRequest(res);
-    return;
-  }
   var shouldUpdateTitle = req.body.hasOwnProperty('title');
   var shouldUpdateContent = req.body.hasOwnProperty('content');
-  if (!shouldUpdateTitle && !shouldUpdateContent) {
+  if ((!shouldUpdateTitle && !shouldUpdateContent) || (shouldUpdateContent && !isValidMemoContent(req.body.content))) {
     returnBadRequest(res);
     return;
   }
@@ -150,7 +139,7 @@ router.put('/recipe/:id', function(req, res) {
         returnNotFound(res);
         return;
       }
-      if (shouldUpdateContent && !isValidRecipeContent(req.body.content, foundRecipe.recipe_type)) {
+      if (foundRecipe.kind !== recipeKinds.MEMO) {
         returnBadRequest(res);
         return;
       }
@@ -161,16 +150,9 @@ router.put('/recipe/:id', function(req, res) {
         updateContent.title = req.body.title;
       }
       if (shouldUpdateContent) {
-        switch (foundRecipe.recipe_type) {
-          case recipeTypes.RECIPE_TYPE_MEMO:
-            updateContent.content = {
-              memo: req.body.content.memo
-            };
-            break;
-          default:
-            returnInternalServerError(res);
-            return;
-        }
+        updateContent.content = {
+          memo: req.body.content.memo
+        };
       }
       Recipe.findOneAndUpdate({
         _id: req.params.id

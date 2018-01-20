@@ -1,20 +1,44 @@
-let mongoose = require('mongoose');
-let Schema = mongoose.Schema;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const recipeKinds = require('../constants/recipe-kinds');
 
-let Recipe = new Schema({
-    recipe_type: String,
-    title: String,
-    content: {
-      memo: String
+const options = {
+  discriminatorKey: 'kind'
+};
+const RecipeSchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true
     },
     created_at: {
       type: Date,
+      required: true,
       default: Date.now
     },
     last_modified_at: {
       type: Date,
+      required: true,
       default: Date.now
     }
-});
+  },
+  options
+);
 
-module.exports = mongoose.model('Recipe', Recipe);
+const Recipe = mongoose.model(recipeKinds.BASE, RecipeSchema);
+module.exports = Recipe;
+
+const memoSchema = new Schema(
+  {
+    content: {
+      memo: {
+        type: String,
+        required: true
+      }
+    }
+  },
+  options
+);
+
+const Memo = Recipe.discriminator(recipeKinds.MEMO, memoSchema);
+module.exports = Memo;
