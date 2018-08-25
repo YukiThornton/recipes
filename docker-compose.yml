@@ -1,0 +1,21 @@
+version: '3'
+services:
+  app:
+    build: .
+    container_name: 'recipes'
+    command: npm start
+    environment:
+      - PORT=3002
+      - NODE_ENV=develop
+    volumes:
+      - .:/usr/src/
+      - /usr/src/node_modules
+    ports:
+      - 3002:3002
+    depends_on:
+      - db
+  db:
+    image: mongo
+    container_name: 'recipedb'
+    ports:
+      - 27017:27017
