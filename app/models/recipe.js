@@ -42,3 +42,18 @@ const memoSchema = new Schema(
 
 const Memo = Recipe.discriminator(recipeKinds.MEMO, memoSchema);
 module.exports = Memo;
+
+const webLinkSchema = new Schema(
+  {
+    content: {
+      url: {
+        type: String,
+        required: true
+      }
+    }
+  },
+  options
+);
+
+const WebLink = Recipe.discriminator(recipeKinds.WEB_LINK, webLinkSchema);
+module.exports = WebLink;

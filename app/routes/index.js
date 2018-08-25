@@ -32,6 +32,11 @@ const createResponseRecipe = (dbRecipe) => {
         memo: dbRecipe.content.memo
       };
       break;
+    case recipeKinds.WEB_LINK:
+      recipe.content = {
+        url: dbRecipe.content.url
+      };
+      break;
     default:
       break;
   }
@@ -45,6 +50,18 @@ const isValidMemoContent = (content) => {
 const hasValidMemoContent = (requestBody) => {
   if (requestBody.hasOwnProperty('content')) {
     return isValidMemoContent(requestBody.content);
+  } else {
+    return false;
+  }
+};
+
+const isValidWebLinkContent = (content) => {
+  return (Object.keys(content).length === 1) && (typeof content.url === 'string');
+};
+
+const hasValidWebLinkContent = (requestBody) => {
+  if (requestBody.hasOwnProperty('content')) {
+    return isValidWebLinkContent(requestBody.content);
   } else {
     return false;
   }
@@ -90,6 +107,26 @@ router.post('/memo', function(req, res) {
   }).save(function (err, memo){
     if(!err) {
       res.status(201).json(createResponseRecipe(memo));
+    } else {
+      console.log(err);
+      returnInternalServerError(res);
+    }
+  })
+});
+
+router.post('/link', function(req, res) {
+  if (!hasValidWebLinkContent(req.body)) {
+    returnBadRequest(res);
+    return;
+  }
+  new Memo({
+    title: 'coooookpad',
+    content: {
+      url: req.body.content.url
+    },
+  }).save(function (err, webLink){
+    if(!err) {
+      res.status(201).json(createResponseRecipe(webLink));
     } else {
       console.log(err);
       returnInternalServerError(res);
