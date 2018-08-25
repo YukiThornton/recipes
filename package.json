@@ -4,9 +4,8 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "set NODE_ENV=develop&& node-dev ./bin/www",
-    "test": "set NODE_ENV=test&& mocha",
-    "db_start": "mongod --config db/mongodb.conf"
+    "start": "NODE_ENV=develop node-dev ./bin/www",
+    "test": "NODE_ENV=test mocha"
   },
   "dependencies": {
     "body-parser": "~1.18.2",
