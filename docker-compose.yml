@@ -17,5 +17,7 @@ services:
   db:
     image: mongo
     container_name: 'recipedb'
+    volumes:
+      - /home/docker/mongo:/data/db
     ports:
       - 27017:27017
